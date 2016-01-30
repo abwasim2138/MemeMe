@@ -10,26 +10,43 @@ import UIKit
 
 class detailVC: UIViewController {
 
+    var indexPathRow: Int? = Int()
+    @IBOutlet weak var imageView: UIImageView!
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
     }
+    
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if let indexPathRow = indexPathRow {
+            imageView.image = Memes.memeLibrary.memes[indexPathRow].memedImage
+        }
+        
+    }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    //MARK: - NAVIGATION 
+    
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        if let iPathRow = indexPathRow {
+        if segue.identifier == "showEditScreen" {
+            let editVC = segue.destinationViewController as! MemeEditorVC
+            editVC.editingExistingMeme = true
+            editVC.indexPathRow = iPathRow
+            print(iPathRow)
+            }
+        }
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
+    
+    
+    
+    
+    
+    
+    
+    
 
 }

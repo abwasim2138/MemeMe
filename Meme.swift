@@ -9,24 +9,16 @@
 import Foundation
 import UIKit
 
-struct Meme {
+struct Meme: Equatable {
     let view: UIView
     let topText: String
     let bottomText: String
     let originalImage: UIImage
-    var memedImage: UIImage {
-        UIGraphicsBeginImageContext(view.frame.size)
-        view.drawViewHierarchyInRect(view.frame, afterScreenUpdates: true)
-        let mImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return mImage
-    }
-    
-    init(view: UIView, topText: String, bottomText: String, originalImage:UIImage) {
-        self.view = view
-        self.topText = topText
-        self.originalImage = originalImage
-        self.bottomText = bottomText
-    }
+    var memedImage: UIImage
     
 }
+
+func ==(lhs: Meme, rhs: Meme) -> Bool {
+    return lhs.memedImage == rhs.memedImage
+}
+

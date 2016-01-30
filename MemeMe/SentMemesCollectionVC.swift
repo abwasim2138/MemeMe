@@ -10,85 +10,94 @@ import UIKit
 
 private let reuseIdentifier = "Cell"
 
-class SentMemesCollectionVC: UICollectionViewController {
+class SentMemesCollectionVC: UICollectionViewController, UIGestureRecognizerDelegate {
 
+    
+    @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
+    private let memeCollection = Memes.memeLibrary
+    private var indexPathRow = Int()
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        //CITE UIFundamentals II
+        let size = (view.frame.size.width - (6.0)) / 3
+        flowLayout.minimumInteritemSpacing = 3.0
+        flowLayout.minimumLineSpacing = 3.0
+        flowLayout.itemSize = CGSizeMake(size, size)
 
-        // Uncomment the following line to preserve selection between presentations
-        // self.clearsSelectionOnViewWillAppear = false
-
-        // Register cell classes
-        self.collectionView!.registerClass(UICollectionViewCell.self, forCellWithReuseIdentifier: reuseIdentifier)
-
-        // Do any additional setup after loading the view.
+        
+// CITE FOR ADDING LONGPRESSGR TO COLLECITONVIEW IN ORDER TO DELETE ITEM IN COLLECITON VIEW       http://stackoverflow.com/questions/29241691/how-do-i-use-uilongpressgesturerecognizer-with-a-uicollectionviewcell-in-swift
+        let longPressGR = UILongPressGestureRecognizer(target: self, action: "deleteMeme:")
+        longPressGR.minimumPressDuration = 0.5
+        longPressGR.delaysTouchesBegan = true
+        longPressGR.delegate = self
+        collectionView?.addGestureRecognizer(longPressGR)
+    }
+    
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
+        collectionView?.reloadData()
+        
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
 
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using [segue destinationViewController].
-        // Pass the selected object to the new view controller.
-    }
-    */
-
-    // MARK: UICollectionViewDataSource
+    // MARK: - UICollectionViewDataSource
 
     override func numberOfSectionsInCollectionView(collectionView: UICollectionView) -> Int {
-        // #warning Incomplete implementation, return the number of sections
-        return 0
+   
+        return 1
     }
 
 
     override func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of items
-        return 0
+       
+        return memeCollection.memes.count
     }
 
     override func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCellWithReuseIdentifier(reuseIdentifier, forIndexPath: indexPath)
+        
+        let cell = collectionView.dequeueReusableCellWithReuseIdentifier(reuseIdentifier, forIndexPath: indexPath) as! CollectionCell
     
-        // Configure the cell
+        cell.imageView.image = memeCollection.memes[indexPath.row].memedImage
     
         return cell
     }
 
-    // MARK: UICollectionViewDelegate
+    // MARK: - UICollectionViewDelegate
 
-    /*
-    // Uncomment this method to specify if the specified item should be highlighted during tracking
-    override func collectionView(collectionView: UICollectionView, shouldHighlightItemAtIndexPath indexPath: NSIndexPath) -> Bool {
-        return true
+    override func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+        indexPathRow = indexPath.row
+        performSegueWithIdentifier("showDetail", sender: self)
     }
-    */
-
-    /*
-    // Uncomment this method to specify if the specified item should be selected
-    override func collectionView(collectionView: UICollectionView, shouldSelectItemAtIndexPath indexPath: NSIndexPath) -> Bool {
-        return true
-    }
-    */
-
-    /*
-    // Uncomment these methods to specify if an action menu should be displayed for the specified item, and react to actions performed on the item
-    override func collectionView(collectionView: UICollectionView, shouldShowMenuForItemAtIndexPath indexPath: NSIndexPath) -> Bool {
-        return false
-    }
-
-    override func collectionView(collectionView: UICollectionView, canPerformAction action: Selector, forItemAtIndexPath indexPath: NSIndexPath, withSender sender: AnyObject?) -> Bool {
-        return false
-    }
-
-    override func collectionView(collectionView: UICollectionView, performAction action: Selector, forItemAtIndexPath indexPath: NSIndexPath, withSender sender: AnyObject?) {
     
+    // MARK: - DELETE MEME
+    
+   func deleteMeme(sender: UILongPressGestureRecognizer) {
+        let point = sender.locationInView(collectionView)
+        guard let indexPath = collectionView?.indexPathForItemAtPoint(point) else{
+            return print("NOT WORKING")
+        }
+        let alertController = UIAlertController(title: "Delete Meme", message: "Are you sure you want to delete this", preferredStyle: .Alert)
+        let okayAction = UIAlertAction(title: "YUP", style: .Default) { (ACTION) -> Void in
+            self.memeCollection.removeMeme(self.memeCollection.memes[indexPath.row])
+            self.collectionView?.deleteItemsAtIndexPaths([indexPath])
+        }
+        let cancelAction = UIAlertAction(title: "Nope", style: .Destructive, handler: nil)
+        
+        alertController.addAction(okayAction)
+        alertController.addAction(cancelAction)
+        presentViewController(alertController, animated: true, completion: nil)
     }
-    */
+    
+    
+    // MARK: - Navigation
+    
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        if segue.identifier == "showDetail" {
+            if let detailVC = segue.destinationViewController as? detailVC {
+                detailVC.indexPathRow = self.indexPathRow
+            }
+        }
+    }
 
 }

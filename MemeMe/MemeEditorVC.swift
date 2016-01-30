@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  MemeEditorVC.swift
 //  MemeMe
 //
 //  Created by Abdul-Wasai Wasim on 1/25/16.
@@ -9,7 +9,7 @@
 import UIKit
 
 
-class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UITextFieldDelegate {
+class MemeEditorVC: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UITextFieldDelegate {
 
     
     @IBOutlet weak var navBar: UINavigationBar!
@@ -21,7 +21,11 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     @IBOutlet weak var toolBar: UIToolbar!
     
     var imageHolder = UIImage()
-    var moveKeyboard = false
+    private var moveKeyboard = false
+    
+    //FOR SEGUE FROM DETAILVC
+    var editingExistingMeme = false
+    var indexPathRow: Int = -1
     override func viewDidLoad() {
         super.viewDidLoad()
     
@@ -40,12 +44,23 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         super.viewWillAppear(animated)
         subscribeToKeyboardNotifications("keyboardWillShow:", name: UIKeyboardWillShowNotification)
         subscribeToKeyboardNotifications("keyboardWillHide:", name: UIKeyboardWillHideNotification)
+        
+        if editingExistingMeme {
+            let meme = Memes.memeLibrary.memes[indexPathRow]
+            topTextField.text = meme.topText
+            if imageView.image == nil {
+            imageView.image = meme.originalImage
+            }
+            bottomTextField.text = meme.bottomText
+            share.enabled = true
+        }
     }
     
     override func viewWillDisappear(animated: Bool) {
         super.viewWillDisappear(animated)
         unsubscribeFromKeyboardNotifications(UIKeyboardWillShowNotification)
         unsubscribeFromKeyboardNotifications(UIKeyboardWillHideNotification)
+        editingExistingMeme = false
     }
     override func prefersStatusBarHidden() -> Bool {
         return true
@@ -90,19 +105,18 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     }
     
     @IBAction func cancel(sender: UIBarButtonItem) {
-        imageView.image = nil
-        topTextField.text = "TOP"
-        bottomTextField.text = "BOTTOM"
-        view.endEditing(true)
-        share.enabled = false
+        dismissViewControllerAnimated(true, completion: nil)
     }
     
     
     //MARK: - IMAGEPICKER DELEGATE METHODS
     
     func imagePickerController(picker: UIImagePickerController, didFinishPickingImage image: UIImage, editingInfo: [String : AnyObject]?) {
-        
         dismissViewControllerAnimated(true, completion: nil)
+        
+        if imageView.image != nil && indexPathRow != -1 {  //THE BOOL CHANGES BACK TO FALSE AFTER RETURNING FROM IMAGEPICKER
+            editingExistingMeme = true
+        }
         imageView.image = image
         share.enabled = true
     }
@@ -139,7 +153,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     
     func keyboardWillShow(notification: NSNotification) {
         if moveKeyboard {
-        view.frame.origin.y -= getKeyboardHeight(notification)
+        view.frame.origin.y = -getKeyboardHeight(notification)
         }
     }
     
@@ -154,15 +168,28 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     }
     
     //MARK: GENERATE AND SAVE MEME
+    func generateMeme ()-> UIImage {
+        hideNavToolBar(true)
+        UIGraphicsBeginImageContext(view.frame.size)
+        view.drawViewHierarchyInRect(view.frame, afterScreenUpdates: true)
+        let mImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        hideNavToolBar(false)
+        return mImage
+    }
     
     func save() {
-        let meme = Meme(view: view, topText: topTextField.text!, bottomText: bottomTextField.text!, originalImage: imageView.image!)
-        hideNavToolBar(true)
+        let meme = Meme(view: view, topText: topTextField.text!, bottomText: bottomTextField.text!,originalImage: imageView.image!, memedImage:generateMeme())
         if let image = imageView.image {
-        imageHolder = image
+            imageHolder = image
         }
         imageView.image = meme.memedImage
-        hideNavToolBar(false)
+        
+        if editingExistingMeme {
+            Memes.memeLibrary.replaceMeme(meme,indexPathRow: indexPathRow)
+        }else{
+            Memes.memeLibrary.addMeme(meme)
+        }
     }
     
     func hideNavToolBar(hide: Bool) {
@@ -178,7 +205,8 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
             activityController.completionWithItemsHandler = {(activity, success, array, error) in
               self.dismissViewControllerAnimated(true, completion: nil)
             }
-            presentViewController(activityController, animated: true, completion:{self.save();self.imageView.image = self.imageHolder})
+            self.save()
+            presentViewController(activityController, animated: true, completion:{self.imageView.image = self.imageHolder})
     }
     }
 
